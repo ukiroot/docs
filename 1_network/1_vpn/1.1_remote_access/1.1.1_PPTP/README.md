@@ -1,3 +1,7 @@
+### Topology
+
+![Topology](pic1.png)
+
 ### Configuration steps
 
 1. Domain name
