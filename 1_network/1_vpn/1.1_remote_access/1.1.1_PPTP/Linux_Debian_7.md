@@ -116,7 +116,7 @@ EOF
 
 /etc/init.d/openntpd restart
 ```
-#### DHCP servers
+#### DHCP server
 ```
 apt-get install isc-dhcp-server -y
 
@@ -150,7 +150,7 @@ EOF
 
 /etc/init.d/dnsmasq restart
 ```
-#### SSH servers
+#### SSH server
 ```
 apt-get install ssh -y
 
