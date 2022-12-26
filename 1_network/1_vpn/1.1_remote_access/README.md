@@ -2,7 +2,7 @@
 
 ## VPN remote access stacks:
 
-### [1.1.1 PPTP](1.1.1_PPTP/)
+### [1.1.1 PPTP](1.1.1_pptp/)
 
 Advantages:
 * embedded client in Windows (since Windows 98);
@@ -11,7 +11,7 @@ Advantages:
 Minuses: 
 * doesn't provide the required level of security.
 
-### [1.1.2 L2PT/IPSEC](1.1.2_L2TP)
+### [1.1.2 L2PT/IPSEC](1.1.2_l2pt)
 
 Advantages:
 * embedded client in Windows (since Windows XP);
@@ -21,7 +21,7 @@ Advantages:
 Minuses:
 - difficult of configuration.
 
-### [1.1.3 OpenVPN](1.1.3_OpenVPN)
+### [1.1.3 OpenVPN](1.1.3_openvpn)
 
 Advantages:
 * simplicity of configuration;
