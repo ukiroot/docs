@@ -76,7 +76,7 @@ step_5_copy_autorization_config_to_home_dir() {
    chown $(id -u):$(id -g) $HOME/.kube/config
 }
 
-step_6_masternoschedule {
+step_6_masternoschedule() {
 echo 'Issue masternoschedule.
 Because test environment include only master node.
 Details by link:
