@@ -119,12 +119,9 @@ step_11_dnat_and_masquerade_kubernetes_dashboard() {
    ETH0_ADDRESS=`ip -4 -o addr show eth0 | awk '{print $4}' | cut -d "/" -f 1`
    KUBE_DASHBOARD_NAMESPACE='kubernetes-dashboard'
 
-   #Add debug print
-   kubectl -n ${KUBE_DASHBOARD_NAMESPACE} get pod
-
-   #TODO
-   #Add temporary ugly sleep
-   sleep 20
+   while [[ `kubectl -n ${KUBE_DASHBOARD_NAMESPACE} get pod -l k8s-app=kubernetes-dashboard --output jsonpath='{.items[0].metadata.labels.k8s-app}'` != "kubernetes-dashboard" ]]; do
+      sleep 1
+   done
 
    kubectl -n ${KUBE_DASHBOARD_NAMESPACE} wait pod -l k8s-app=kubernetes-dashboard --for condition=Ready 
 
