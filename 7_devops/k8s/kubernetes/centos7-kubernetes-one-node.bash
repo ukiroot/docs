@@ -124,7 +124,7 @@ step_11_dnat_and_masquerade_kubernetes_dashboard() {
 
    #TODO
    #Add temporary ugly sleep
-   sleep 10
+   sleep 20
 
    kubectl -n ${KUBE_DASHBOARD_NAMESPACE} wait pod -l k8s-app=kubernetes-dashboard --for condition=Ready 
 
