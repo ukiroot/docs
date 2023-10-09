@@ -118,6 +118,9 @@ step_10_configure_kubernetes_dashboard() {
 step_11_dnat_and_masquerade_kubernetes_dashboard() {
    ETH0_ADDRESS=`ip -4 -o addr show eth0 | awk '{print $4}' | cut -d "/" -f 1`
    KUBE_DASHBOARD_NAMESPACE='kubernetes-dashboard'
+
+   kubectl -n ${KUBE_DASHBOARD_NAMESPACE} wait pod -l k8s-app=kubernetes-dashboard --for condition=Ready 
+
    KUBE_DASHBOARD_POD_NAME=`kubectl -n ${KUBE_DASHBOARD_NAMESPACE} get pod -l k8s-app=kubernetes-dashboard --output jsonpath='{.items[0].metadata.name}'`
    KUBE_DASHBOARD_POD_IP=`kubectl -n ${KUBE_DASHBOARD_NAMESPACE} get pod "${KUBE_DASHBOARD_POD_NAME}" --output jsonpath='{.status.podIP}'`
    KUBE_DASHBOARD_POD_PORT=`kubectl -n ${KUBE_DASHBOARD_NAMESPACE} get pod "${KUBE_DASHBOARD_POD_NAME}" --output jsonpath='{.spec.containers[0].ports[0].containerPort}'`
