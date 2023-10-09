@@ -7,7 +7,7 @@ set -o errexit
 precondition_known_issues () {
 
    echo 'Turn off selinux. Details by link:
-   https://github.com/kubernetes/kubeadm/issues/279
+   https://github.com/kubernetes/kubeadm/issues/279'
    setenforce 0
    sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
 
