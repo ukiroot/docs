@@ -69,7 +69,12 @@ step_4_init_cluster() {
    kubeadm init --v=5 --pod-network-cidr=10.244.0.0/16
 }
 
-step_5_share_cluster_autorization_conf() {
+step_5_postinit_issues() {
+   echo 'Without "kube-flannel.yml" conteiners hanged in "pending" state'
+   KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+}
+
+step_6_share_cluster_autorization_conf() {
    echo 'Share by http cluster autorization config. For test environment'
    yum install -y httpd
    rm -rf /var/www/html
@@ -84,13 +89,13 @@ EOF
    chmod o+r /etc/kubernetes/*
 }
 
-step_6_copy_autorization_config_to_home_dir() {
+step_7_copy_autorization_config_to_home_dir() {
    mkdir -p $HOME/.kube
    cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
    chown $(id -u):$(id -g) $HOME/.kube/config
 }
 
-step_7_masternoschedule() {
+step_8_masternoschedule() {
 echo 'Issue masternoschedule.
 Because test environment include only master node.
 Details by link:
@@ -99,18 +104,18 @@ https://stackoverflow.com/questions/55191980/remove-node-role-kubernetes-io-mast
 kubectl taint node `hostname` node-role.kubernetes.io/control-plane:NoSchedule-
 }
 
-step_8_install_kubernetes_dashboard() {
+step_9_install_kubernetes_dashboard() {
   kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
 }
 
-step_9_configure_kubernetes_dashboard() {
+step_10_configure_kubernetes_dashboard() {
   echo 'Enable anonymous authorization'
   kubectl patch deployment kubernetes-dashboard -n kubernetes-dashboard --type 'json' -p '[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-skip-login"}]'
   echo 'Show all namespaces'
   kubectl create clusterrolebinding serviceaccounts-cluster-admin --clusterrole=cluster-admin --group=system:serviceaccounts
 }
 
-step_10_dnat_and_masquerade_kubernetes_dashboard() {
+step_11_dnat_and_masquerade_kubernetes_dashboard() {
    ETH0_ADDRESS=`ip -4 -o addr show eth0 | awk '{print $4}' | cut -d "/" -f 1`
    KUBE_DASHBOARD_NAMESPACE='kubernetes-dashboard'
    KUBE_DASHBOARD_POD_NAME=`kubectl -n ${KUBE_DASHBOARD_NAMESPACE} get pod -l k8s-app=kubernetes-dashboard --output jsonpath='{.items[0].metadata.name}'`
@@ -125,16 +130,17 @@ step_1_install_requrements
 step_2_install_kuber
 step_3_postinstall_issues
 step_4_init_cluster
-step_5_share_cluster_autorization_conf
-step_6_copy_autorization_config_to_home_dir
-step_7_masternoschedule
-step_8_install_kubernetes_dashboard
-step_9_configure_kubernetes_dashboard
-step_10_dnat_and_masquerade_kubernetes_dashboard
+step_5_postinit_issues
+step_6_share_cluster_autorization_conf
+step_7_copy_autorization_config_to_home_dir
+step_8_masternoschedule
+step_9_install_kubernetes_dashboard
+step_10_configure_kubernetes_dashboard
+step_11_dnat_and_masquerade_kubernetes_dashboard
 
 
 
-#########kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+
 #########
 #########cat << EOF | kubectl apply -f -
 #########kind: StorageClass
