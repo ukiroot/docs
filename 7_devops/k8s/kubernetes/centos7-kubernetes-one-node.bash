@@ -4,6 +4,18 @@ set -o xtrace
 set -o verbose
 set -o errexit
 
+wait_readiness_of_pod() {
+   NAME_SPACE="$1"
+   POD_NAME="$2"
+   JSON_PATH="$3"
+
+   while [[ `KUBECONFIG=/etc/kubernetes/admin.conf kubectl -n ${NAME_SPACE} get pod -l component=${POD_NAME} --output jsonpath="${JSON_PATH}"` != "${POD_NAME}" ]]; do
+      sleep 5
+   done
+
+   KUBECONFIG=/etc/kubernetes/admin.conf kubectl -n ${NAME_SPACE} wait pod -l component=${POD_NAME} --for condition=Ready
+}
+
 precondition_known_issues () {
 
    echo 'Turn off selinux. Details by link:
@@ -67,6 +79,7 @@ step_4_init_cluster() {
    rm -rfv ~/.kube/
    rm -rfv /var/log/pods/*
    kubeadm init --v=5 --pod-network-cidr=10.244.0.0/16
+   wait_readiness_of_pod "kube-system" "kube-apiserver" "{.items[0].metadata.labels.component}"
 }
 
 step_5_postinit_issues() {
@@ -119,11 +132,7 @@ step_11_dnat_and_masquerade_kubernetes_dashboard() {
    ETH0_ADDRESS=`ip -4 -o addr show eth0 | awk '{print $4}' | cut -d "/" -f 1`
    KUBE_DASHBOARD_NAMESPACE='kubernetes-dashboard'
 
-   while [[ `kubectl -n ${KUBE_DASHBOARD_NAMESPACE} get pod -l k8s-app=kubernetes-dashboard --output jsonpath='{.items[0].metadata.labels.k8s-app}'` != "kubernetes-dashboard" ]]; do
-      sleep 1
-   done
-
-   kubectl -n ${KUBE_DASHBOARD_NAMESPACE} wait pod -l k8s-app=kubernetes-dashboard --for condition=Ready 
+   wait_readiness_of_pod "${KUBE_DASHBOARD_NAMESPACE}" "kubernetes-dashboard" "{.items[0].metadata.labels.k8s-app}"
 
    KUBE_DASHBOARD_POD_NAME=`kubectl -n ${KUBE_DASHBOARD_NAMESPACE} get pod -l k8s-app=kubernetes-dashboard --output jsonpath='{.items[0].metadata.name}'`
    KUBE_DASHBOARD_POD_IP=`kubectl -n ${KUBE_DASHBOARD_NAMESPACE} get pod "${KUBE_DASHBOARD_POD_NAME}" --output jsonpath='{.status.podIP}'`
