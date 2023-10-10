@@ -28,8 +28,8 @@ EOF
    sysctl --system
 
    echo 'Turn off firewall. Configuration of firewall and debug network issue overhead in test environment'
-   systemctl stop firewalld
-   systemctl disable firewalld
+   systemctl stop firewalld || true
+   systemctl disable firewalld || true
 }
 
 step_1_install_requrements () {
