@@ -4,16 +4,9 @@ cd /var/lib/libvirt/images/
 mkdir min_dist
 cd min_dist
 
-qemu-img create CentOS_7.img 2G
-rmmod loop
-modprobe loop max_part=15
+qemu-img create centos_7.img 2G
 
-
-
-losetup /dev/loop0 CentOS_7.img
-
-
-fdisk /dev/loop0 << "EOF"
+fdisk centos_7.img << "EOF"
 n
 p
 1
@@ -23,41 +16,50 @@ a
 w
 EOF
 
-partprobe /dev/loop0
-mkfs.ext4 -F /dev/loop0p1
-mkdir /mnt/centos
-mount -v /dev/loop0p1 /mnt/centos
+DISK_DEV=`losetup -f --show "centos_7.img"`
+
+partprobe ${DISK_DEV}
+mkfs.ext4 -F ${DISK_DEV}p1
+mkdir -p /mnt/centos
+mount -v ${DISK_DEV}p1 /mnt/centos
 
 cd /mnt/centos
-wget -O /mnt/centos/centos-7-x86_64-minimal-20150401.tar.xz http://download.openvz.org/contrib/template/precreated/centos-7-x86_64-minimal-20150401.tar.xz
-tar xf centos-7-x86_64-minimal-20150401.tar.xz
-
+wget https://download.openvz.org/contrib/template/precreated/centos-7-x86_64-minimal-20170709.tar.xz
+tar xvf *.tar.xz
 
 mount -v --bind /dev /mnt/centos/dev
 mount -vt devpts devpts /mnt/centos/dev/pts
 mount -vt proc proc /mnt/centos/proc
-mount -vt sysfs sysfs /mnt/centos/sys
 mount -vt tmpfs tmpfs /mnt/centos/run
+###Do not mount sysfs for install grub in Non-UEFI mode
+#mount -vt sysfs sysfs /mnt/centos/sys
 
 
-cat > /root/postinst.sh << EOF
+cat > /mnt/centos/root/postinst.sh << EOF
 
+echo 'nameserver 8.8.8.8' > /etc/resolv.conf
 yum -y update
 yum -y install kernel.x86_64
 yum -y install grub2.x86_64
-grub2-install /dev/loop0 --modules="biosdisk part_msdos"
+####Do not mount install grub2-efi-modules for install grub in Non-UEFI mode
+#yum -y install grub2-efi-modules
+# --target=i386-pc for legacy in Non-UEFI mode 
+grub2-install ${DISK_DEV} --modules="biosdisk part_msdos" --target=i386-pc
 
 cat > /etc/default/grub << "OEF"
-GRUB_CMDLINE_LINUX="net.ifnames=0"
+GRUB_CMDLINE_LINUX="net.ifnames=0 console=ttyS0"
 OEF
-grub2-mkconfig -o /boot/grub2/grub.cfg 
+grub2-mkconfig -o /boot/grub2/grub.cfg
+sed -i 's/\/dev\/loop.p1/\/dev\/sda1/g' /boot/grub2/grub.cfg
 EOF
 
-   chroot "${BILLET_MOUNT_DIR}" /bin/bash /root/postinst.sh
-   chroot "${BILLET_MOUNT_DIR}" /bin/bash -c "rm -vf /root/postinst.sh"
+chroot /mnt/centos /bin/bash /root/postinst.sh
+chroot /mnt/centos /bin/bash -c "rm -vf /root/postinst.sh"
 
 umount -v /mnt/centos/dev/pts
 umount -v /mnt/centos/dev
 umount -v /mnt/centos/proc
-umount -v /mnt/centos/sys
 umount -v /mnt/centos/run
+#Do not mount sysfs for install grub in Non-UEFI mode
+#umount -v /mnt/centos/sys
+umount -v /mnt/centos
