@@ -31,11 +31,15 @@ mount -v --bind /dev /mnt/centos/dev
 mount -vt devpts devpts /mnt/centos/dev/pts
 mount -vt proc proc /mnt/centos/proc
 mount -vt tmpfs tmpfs /mnt/centos/run
-###Do not mount sysfs for install grub in Non-UEFI mode
-#mount -vt sysfs sysfs /mnt/centos/sys
+mount -vt sysfs sysfs /mnt/centos/sys
 
 
 cat > /mnt/centos/root/postinst.sh << EOF
+
+cat > /etc/fstab << "EOFFF"
+/dev/sda1       /               ext4        defaults        0       1
+EOFFF
+
 
 echo 'nameserver 8.8.8.8' > /etc/resolv.conf
 yum -y update
@@ -51,6 +55,9 @@ GRUB_CMDLINE_LINUX="net.ifnames=0 console=ttyS0"
 OEF
 grub2-mkconfig -o /boot/grub2/grub.cfg
 sed -i 's/\/dev\/loop.p1/\/dev\/sda1/g' /boot/grub2/grub.cfg
+sed -i 's/linuxefi/linux/g' /boot/grub2/grub.cfg
+sed -i 's/initrdefi/initrd/g' /boot/grub2/grub.cfg
+
 EOF
 
 chroot /mnt/centos /bin/bash /root/postinst.sh
@@ -60,6 +67,5 @@ umount -v /mnt/centos/dev/pts
 umount -v /mnt/centos/dev
 umount -v /mnt/centos/proc
 umount -v /mnt/centos/run
-#Do not mount sysfs for install grub in Non-UEFI mode
-#umount -v /mnt/centos/sys
+umount -v /mnt/centos/sys
 umount -v /mnt/centos
