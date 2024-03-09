@@ -1,3 +1,0 @@
-Add to boot kernel
-net.ifnames=0
-grub2-mkconfig -o /boot/grub2/grub.cfg 
