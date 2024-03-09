@@ -1,0 +1,87 @@
+fdisk /dev/sda << EOF
+d
+4
+d
+3
+d
+2
+d
+1
+n
+p
+1
+
+
+a
+1
+w
+EOF
+mkfs.ext4 -F /dev/sda1
+mount /dev/sda1 /mnt/
+cd /mnt/
+wget -O /mnt/ubuntu-core-15.04-core-amd64.tar.gz http://cdimage.ubuntu.com/ubuntu-core/releases/15.04/release/ubuntu-core-15.04-core-amd64.tar.gz
+tar xf ubuntu-core-15.04-core-amd64.tar.gz
+
+
+mount -t proc proc /mnt/proc
+mount --rbind /sys /mnt/sys
+mount --rbind /dev /mnt/dev
+
+chroot /mnt/ /bin/bash
+
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+printf "127.0.0.1\tlocalhost localhost.localdomain\n" > /etc/hosts
+apt-get update
+apt-get -y install language-pack-en
+apt-get -y install grub2-common grub-pc
+apt-get -y install linux-image-extra-3.19.0-15-generic
+apt-get -y install nano
+apt-get -y install sudo less iputils-ping net-tools
+update-locale LC_ALL=en_US.UTF8
+#
+useradd -m -s /bin/bash -G adm,cdrom,sudo,dip,plugdev admin
+#
+passwd admin << EOF
+admin
+admin
+EOF
+#
+cat - > /etc/init/ttyS0.conf << EOF
+start on stopped rc or RUNLEVEL=[12345]
+stop on runlevel [!12345]
+
+respawn
+exec /sbin/getty -L 115200 ttyS0 vt102
+EOF
+#
+cat - > /etc/default/grub << "EOF"
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=10
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+GRUB_CMDLINE_LINUX="console=ttyS0,115200n8"
+GRUB_TERMINAL="console serial"
+GRUB_TERMINAL_OUTPUT="console serial"
+GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
+EOF
+#
+update-grub2
+#
+cat - > /etc/fstab << EOF
+UUID=sda1 /               ext4    errors=remount-ro 0       1
+EOF
+#
+UUIDsda=`blkid | grep sda1 | awk '{print $2}' | sed 's/"//g'`
+sed -i "s/UUID=sda1/$UUIDsda/" /etc/fstab
+#
+cat - > /etc/network/interfaces.d/eth0 << EOF
+auto eth0
+iface eth0 inet dhcp
+EOF
+exit
+umount /mnt/proc
+umount /mnt/sys
+umount /mnt/dev
+umount /mnt/
+
+#https://help.ubuntu.com/community/SerialConsoleHowto

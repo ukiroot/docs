@@ -1,0 +1,15 @@
+REPOSITORY_URI="http://ftp.pt.debian.org/debian"
+DIST_VERSION="jessie"
+cat > /etc/apt/sources.list << EOF
+deb ${REPOSITORY_URI} ${DIST_VERSION} main contrib non-free
+deb-src ${REPOSITORY_URI} ${DIST_VERSION} main contrib non-free
+
+deb ${REPOSITORY_URI} ${DIST_VERSION}-updates main contrib non-free
+deb-src ${REPOSITORY_URI} ${DIST_VERSION}-updates main contrib non-free
+
+deb ${REPOSITORY_URI} ${DIST_VERSION}-backports main contrib non-free
+deb-src ${REPOSITORY_URI} ${DIST_VERSION}-backports main contrib non-free
+
+deb ${REPOSITORY_URI}-security ${DIST_VERSION}/updates main contrib non-free
+deb-src ${REPOSITORY_URI}-security ${DIST_VERSION}/updates main contrib non-free
+EOF

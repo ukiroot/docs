@@ -1,0 +1,63 @@
+apt-get install -y debootstrap qemu-utils
+
+cd /var/lib/libvirt/images/
+mkdir min_dist
+cd min_dist
+
+qemu-img create CentOS_7.img 2G
+rmmod loop
+modprobe loop max_part=15
+
+
+
+losetup /dev/loop0 CentOS_7.img
+
+
+fdisk /dev/loop0 << "EOF"
+n
+p
+1
+
+
+a
+w
+EOF
+
+partprobe /dev/loop0
+mkfs.ext4 -F /dev/loop0p1
+mkdir /mnt/centos
+mount -v /dev/loop0p1 /mnt/centos
+
+cd /mnt/centos
+wget -O /mnt/centos/centos-7-x86_64-minimal-20150401.tar.xz http://download.openvz.org/contrib/template/precreated/centos-7-x86_64-minimal-20150401.tar.xz
+tar xf centos-7-x86_64-minimal-20150401.tar.xz
+
+
+mount -v --bind /dev /mnt/centos/dev
+mount -vt devpts devpts /mnt/centos/dev/pts
+mount -vt proc proc /mnt/centos/proc
+mount -vt sysfs sysfs /mnt/centos/sys
+mount -vt tmpfs tmpfs /mnt/centos/run
+
+
+cat > /root/postinst.sh << EOF
+
+yum -y update
+yum -y install kernel.x86_64
+yum -y install grub2.x86_64
+grub2-install /dev/loop0 --modules="biosdisk part_msdos"
+
+cat > /etc/default/grub << "OEF"
+GRUB_CMDLINE_LINUX="net.ifnames=0"
+OEF
+grub2-mkconfig -o /boot/grub2/grub.cfg 
+EOF
+
+   chroot "${BILLET_MOUNT_DIR}" /bin/bash /root/postinst.sh
+   chroot "${BILLET_MOUNT_DIR}" /bin/bash -c "rm -vf /root/postinst.sh"
+
+umount -v /mnt/centos/dev/pts
+umount -v /mnt/centos/dev
+umount -v /mnt/centos/proc
+umount -v /mnt/centos/sys
+umount -v /mnt/centos/run

@@ -1,0 +1,113 @@
+#!/bin/bash
+#https://help.ubuntu.com/community/SerialConsoleHowto
+
+apt-get install -y qemu-utils
+
+cd /var/lib/libvirt/images/
+mkdir min_dist
+cd min_dist
+
+qemu-img create ubuntu14.04.img 1900M
+modprobe nbd max_part=15
+qemu-nbd -c /dev/nbd0 ubuntu14.04.img
+
+
+fdisk /dev/nbd0 << "EOF"
+n
+p
+1
+
+
+a
+w
+EOF
+mkfs.ext4 -F /dev/nbd0p1
+mkdir  /mnt/ubuntu
+mount -v /dev/nbd0p1 /mnt/ubuntu
+
+
+
+cd /mnt/ubuntu
+wget http://cdimage.ubuntu.com/ubuntu-core/releases/14.10/release/ubuntu-core-14.10-core-amd64.tar.gz
+tar xvf ubuntu-core-14.10-core-amd64.tar.gz
+
+
+mount -v --bind /dev /mnt/ubuntu/dev
+mount -vt devpts devpts /mnt/ubuntu/dev/pts
+mount -vt proc proc /mnt/ubuntu/proc
+mount -vt sysfs sysfs /mnt/ubuntu/sys
+mount -vt tmpfs tmpfs /mnt/ubuntu/run
+
+
+cat > /mnt/ubuntu/postinstall.sh << "OEF"
+#!/bin/bash
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+printf "127.0.0.1\tlocalhost localhost.localdomain\n" > /etc/hosts
+apt-get update
+apt-get -y install language-pack-en
+update-locale LC_ALL=en_US.UTF8
+
+DEBIAN_FRONTEND=noninteractive apt-get -y install linux-image-extra-virtual
+DEBIAN_FRONTEND=noninteractive apt-get -y install nano
+DEBIAN_FRONTEND=noninteractive apt-get -y install sudo less iputils-ping net-tools ssh
+DEBIAN_FRONTEND=noninteractive apt-get -y install grub2-common grub-pc
+#
+useradd -m -s /bin/bash -G adm,cdrom,sudo,dip,plugdev admin
+#
+passwd admin << EOF
+admin
+admin
+EOF
+#
+cat - > /etc/init/ttyS0.conf << EOF
+start on stopped rc or RUNLEVEL=[12345]
+stop on runlevel [!12345]
+
+respawn
+exec /sbin/getty -L 115200 ttyS0 vt102
+EOF
+#
+cat - > /etc/default/grub << EOF
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=10
+GRUB_DISTRIBUTOR=`lsb_release -i -s 2> /dev/null || echo Debian`
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+GRUB_CMDLINE_LINUX="console=ttyS0,115200n8"
+GRUB_TERMINAL="console serial"
+GRUB_TERMINAL_OUTPUT="console serial"
+GRUB_SERIAL_COMMAND="serial --speed=115200 --unit=0 --word=8 --parity=no --stop=1"
+EOF
+#
+#
+cat ->> /etc/fstab << EOF
+UUID=nbd0p1 /               ext4    errors=remount-ro 0       1
+EOF
+#
+UUIDsda=`blkid | grep nbd0p1 | awk '{print $2}' | sed 's/"//g'`
+sed -i "s/UUID=nbd0p1/$UUIDsda/" /etc/fstab
+#
+cat - > /etc/network/interfaces.d/eth0 << EOF
+auto eth0
+iface eth0 inet dhcp
+EOF
+grub-install /dev/nbd0 --modules="biosdisk part_msdos"
+update-grub2
+sed -i 's/\/dev\/nbd0p1/\/dev\/sda1/g' /boot/grub/grub.cfg
+OEF
+
+chroot /mnt/ubuntu /bin/bash -c "bash /postinstall.sh"
+
+chroot /mnt/ubuntu /bin/bash -c "rm -rf /postinstall.sh"
+
+umount -v /mnt/ubuntu/dev/pts
+umount -v /mnt/ubuntu/dev
+umount -v /mnt/ubuntu/proc
+umount -v /mnt/ubuntu/sys
+umount -v /mnt/ubuntu/run
+
+cd /
+umount -v /mnt/ubuntu/
+qemu-nbd  -d /dev/nbd0
+rmmod nbd
+
+
