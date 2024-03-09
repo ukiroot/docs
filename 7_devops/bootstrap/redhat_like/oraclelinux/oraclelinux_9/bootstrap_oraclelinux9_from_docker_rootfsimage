@@ -1,0 +1,93 @@
+# List of available images could be get by link:
+# https://hub.docker.com/v2/namespaces/library/repositories/oraclelinux/tags?page_size=100&name=9-slim
+
+apt-get install -y debootstrap qemu-utils docker.io
+
+mkdir -p /var/lib/libvirt/images/min_dist
+cd /var/lib/libvirt/images/min_dist
+
+qemu-img create oraclelinux9.img 2G
+
+fdisk oraclelinux9.img << "EOF"
+n
+p
+1
+
+
+a
+w
+EOF
+
+DISK_DEV=`losetup -f --show "oraclelinux9.img"`
+
+partprobe ${DISK_DEV}
+mkfs.ext4 -F ${DISK_DEV}p1
+mkdir -p /mnt/oraclelinux9
+mount -v ${DISK_DEV}p1 /mnt/oraclelinux9
+
+cd /mnt/oraclelinux9
+
+
+
+
+docker run --pull always --rm  docker.io/library/oraclelinux:9-slim ls
+docker save docker.io/library/oraclelinux:9-slim  > oraclelinux_9.tar
+
+tar xvf *.tar
+find ./ -name layer.tar | while read LAYER; do mv -v ${LAYER} ./;done
+ls -1 | grep -v layer | while read FILE; do rm -f ${FILE}; done
+tar xvf *.tar
+
+mount -v --bind /dev /mnt/oraclelinux9/dev
+mount -vt devpts devpts /mnt/oraclelinux9/dev/pts
+mount -vt proc proc /mnt/oraclelinux9/proc
+mount -vt tmpfs tmpfs /mnt/oraclelinux9/run
+mount -vt sysfs sysfs /mnt/oraclelinux9/sys
+
+
+cat > /mnt/oraclelinux9/root/postinst.sh << EOF
+
+cat > /etc/fstab << "EOFFF"
+/dev/sda1       /               ext4        defaults        0       1
+EOFFF
+
+sed -i '6s/enabled=0/enabled=1/g' /etc/yum.repos.d/uek-ol9.repo
+echo 'nameserver 8.8.8.8' > /etc/resolv.conf
+microdnf install dnf
+dnf install kernel-uek grub2-pc.x86_64 passwd
+
+grub2-install ${DISK_DEV} --modules="biosdisk part_msdos" --target=i386-pc
+grub2-mkconfig -o /boot/grub2/grub.cfg
+
+
+dnf remove kernel-uek*
+dnf install kernel-uek
+grub2-mkconfig -o /boot/grub2/grub.cfg
+
+
+
+passwd << "OEF"
+admin
+admin
+OEF
+
+#cat > /etc/default/grub << "OEF"
+#GRUB_CMDLINE_LINUX="net.ifnames=0 console=ttyS0"
+#OEF
+
+dracut --force --add-drivers ahci --add-drivers virtio_scsi --add-drivers sd_mod /boot/initramfs-5.15.0-203.146.5.1.el9uek.x86_64.img 5.15.0-203.146.5.1.el9uek.x86_64
+
+EOF
+
+chroot /mnt/oraclelinux9 /bin/bash /root/postinst.sh
+chroot /mnt/oraclelinux9 /bin/bash -c "rm -vf /root/postinst.sh"
+
+cd ~/
+umount -v /mnt/oraclelinux9/dev/pts
+umount -v /mnt/oraclelinux9/dev
+umount -v /mnt/oraclelinux9/proc
+umount -v /mnt/oraclelinux9/run
+umount -v /mnt/oraclelinux9/sys
+umount -v /mnt/oraclelinux9
+
+losetup -d "${DISK_DEV}"
