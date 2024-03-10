@@ -6,7 +6,7 @@ apt-get install -y debootstrap qemu-utils docker.io
 mkdir -p /var/lib/libvirt/images/min_dist
 cd /var/lib/libvirt/images/min_dist
 
-qemu-img create oraclelinux9.img 2G
+qemu-img create oraclelinux9.img 3G
 
 fdisk oraclelinux9.img << "EOF"
 n
@@ -27,9 +27,6 @@ mount -v ${DISK_DEV}p1 /mnt/oraclelinux9
 
 cd /mnt/oraclelinux9
 
-
-
-
 docker run --pull always --rm  docker.io/library/oraclelinux:9-slim ls
 docker save docker.io/library/oraclelinux:9-slim  > oraclelinux_9.tar
 
@@ -44,39 +41,38 @@ mount -vt proc proc /mnt/oraclelinux9/proc
 mount -vt tmpfs tmpfs /mnt/oraclelinux9/run
 mount -vt sysfs sysfs /mnt/oraclelinux9/sys
 
-
 cat > /mnt/oraclelinux9/root/postinst.sh << EOF
 
-cat > /etc/fstab << "EOFFF"
+cat > /etc/fstab << "OEFFFF"
 /dev/sda1       /               ext4        defaults        0       1
-EOFFF
+OEFFFF
 
 sed -i '6s/enabled=0/enabled=1/g' /etc/yum.repos.d/uek-ol9.repo
 echo 'nameserver 8.8.8.8' > /etc/resolv.conf
 microdnf install dnf
-dnf install kernel-uek grub2-pc.x86_64 passwd
+dnf install \
+    kernel-uek \
+    grub2-pc.x86_64 \
+    passwd \
+    iproute \
+    dhcp-client
 
+passwd << "OEFFFF"
+admin
+admin
+OEFFFF
+
+cat > /etc/default/grub << "OEFFFF"
+GRUB_TERMINAL="serial console"
+GRUB_CMDLINE_LINUX="net.ifnames=0 console=tty0 console=ttyS0,115200"
+OEFFFF
 grub2-install ${DISK_DEV} --modules="biosdisk part_msdos" --target=i386-pc
 grub2-mkconfig -o /boot/grub2/grub.cfg
+EOF
 
-
-dnf remove kernel-uek*
-dnf install kernel-uek
-grub2-mkconfig -o /boot/grub2/grub.cfg
-
-
-
-passwd << "OEF"
-admin
-admin
-OEF
-
-#cat > /etc/default/grub << "OEF"
-#GRUB_CMDLINE_LINUX="net.ifnames=0 console=ttyS0"
-#OEF
-
-dracut --force --add-drivers ahci --add-drivers virtio_scsi --add-drivers sd_mod /boot/initramfs-5.15.0-203.146.5.1.el9uek.x86_64.img 5.15.0-203.146.5.1.el9uek.x86_64
-
+cat >> /mnt/oraclelinux9/root/postinst.sh << "EOF"
+KERNEL_VERSION=`ls /boot/ | grep initramfs | tail -n1 | grep -Eo '[1-9].*' | sed 's/\.img//g'`
+dracut --force --add-drivers ahci --add-drivers virtio_scsi --add-drivers sd_mod /boot/initramfs-${KERNEL_VERSION}.img ${KERNEL_VERSION}
 EOF
 
 chroot /mnt/oraclelinux9 /bin/bash /root/postinst.sh
