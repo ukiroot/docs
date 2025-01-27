@@ -1,3 +1,2 @@
-64bit: http://mirror.centos.org/centos/7/os/x86_64/
-64bit: https://mirrors.up.pt/pub/centos/7/os/x86_64/
-
+#CentOS Linux 7's end of life is June 30, 2024, so packages are available only on 'vault.centos.org':
+64bit: http://vault.centos.org/7.9.2009
