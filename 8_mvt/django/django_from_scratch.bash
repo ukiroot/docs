@@ -223,12 +223,45 @@ git add .
 git commit -a -m 'Step 8: add base_html_layout.html and use it root and info templates'
 
 
-# #Step XXX:
-# python3 manage.py migrate
-# git add db.sqlite3
-# git commit -a -m "Third step: 'python3 manage.py migrate'"
-# 
-# 
-# #Step XXX:
-# DJANGO_SUPERUSER_USERNAME=django DJANGO_SUPERUSER_EMAIL=django@example.com DJANGO_SUPERUSER_PASSWORD=django python3 manage.py createsuperuser --noinput
-# git commit db.sqlite3 -m "XXX Step: Create superuser"
+#Step 9: apply migrations
+python3 manage.py migrate
+git add db.sqlite3
+git commit -a -m "Step 9: apply migrations"
+
+
+#Step 10: create django superuser
+DJANGO_SUPERUSER_USERNAME=django DJANGO_SUPERUSER_EMAIL=django@example.com DJANGO_SUPERUSER_PASSWORD=django python3 manage.py createsuperuser --noinput
+git commit db.sqlite3 -m "Step 10: create django superuser"
+
+
+#Step 11: create new django app 'unixusers'
+python3 manage.py startapp unixusers
+sed -i \
+    -e "40 a\     'unixusers'," \
+    django_project/settings.py
+git add unixusers/
+git commit -a -m "Step 11: Create new django app 'unixusers'"
+
+
+#Step 12: create model for app "unixusers"
+cat > unixusers/models.py << "EOF"
+from django.db import models
+
+class UnixUser(models.Model):
+    name = models.CharField(max_length=120)
+    user_id = models.IntegerField()
+EOF
+python3 manage.py makemigrations
+python3 manage.py migrate
+git add .
+git commit -a -m 'Step 12: Create model for app "unixusers"'
+
+
+#Step 13: register "unixusers" in django admin
+cat > unixusers/admin.py << "EOF"
+from django.contrib import admin
+from .models import UnixUser
+
+admin.site.register(UnixUser)
+EOF
+git commit -a -m 'Step 13: register "unixusers" in django admin'
