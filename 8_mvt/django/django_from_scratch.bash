@@ -55,7 +55,7 @@ def api_request_info(request):
 EOF
 sed -i \
     -e '18 a\from . import views' \
-    -e "21 a\    path('api/hello_world', views.api_hello_world),\n    path('api/hello_url', views.api_request_info)," \
+    -e "21 a\    path('api/hello_world', views.api_hello_world),\n    path('api/request_info', views.api_request_info)," \
     django_project/urls.py
 git add django_project/views.py
 git commit -a -m "Step 4: create simple views based on HttpResponse"
@@ -72,11 +72,11 @@ cat > templates/root.html << "EOF"
     <title>root</title>
 </head>
 <body>
-    <div>
+    <main>
         <h1>root</h1>
         <p>Current page link <a href="/">Root</a> page.</p>
         <p>Check out my <a href="/info">Info</a> page.</p>
-    </div>
+    </main>
 </body>
 </html>
 EOF
@@ -89,11 +89,11 @@ cat > templates/info.html << "EOF"
     <title>Info</title>
 </head>
 <body>
-    <div>
+    <main>
         <h1>Info</h1>
         <p>Current page link <a href="/info">Info</a> page.</p>
         <p>Check out my <a href="/">Root</a> page.</p>
-    </div>
+    </main>
 </body>
 </html>
 EOF
@@ -135,9 +135,6 @@ body {
     align-items: center;
     font-family: Arial, sans-serif;
 }
-.content {
-    text-align: center;
-}
 EOF
 sed -i \
     -e '2 a\{% load static %}' \
@@ -163,6 +160,67 @@ sed -i \
     -e '8 a\    <script src="{% static '"'"js/main.js"'"' %}" defer></script>' \
     templates/info.html
 git commit -a -m 'Step 7: add static, javaScript code'
+
+
+#Step 8: add base_html_layout.html and use it root and info templates
+cat > templates/base_html_layout.html << "EOF"
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        {% block title %}
+            Django App
+        {% endblock %}
+    </title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <script src="{% static 'js/main.js' %}" defer></script>
+</head>
+<body>
+    <main>
+           {% block content_current_page %}
+           {% endblock %}
+           {% block content_other_page %}
+           {% endblock %}
+    </main>
+</body>
+</html>
+EOF
+cat > templates/info.html << "EOF"
+{% extends 'base_html_layout.html' %}
+{% block title %}
+    Info
+{% endblock %}
+
+{% block content_current_page %}
+    <h1>Info</h1>
+    <p>Current page link <a href="/">Info</a> page.</p>
+{% endblock %}
+
+{% block content_other_page %}
+    <p>Check out my <a href="/">Root</a> page.</p>
+{% endblock %}
+EOF
+
+cat > templates/root.html << "EOF"
+{% extends 'base_html_layout.html' %}
+{% block title %}
+    Root
+{% endblock %}
+
+{% block content_current_page %}
+    <h1>Root</h1>
+    <p>Current page link <a href="/">Root</a> page.</p>
+{% endblock %}
+
+{% block content_other_page %}
+    <p>Check out my <a href="/info">Info</a> page.</p>
+{% endblock %}
+EOF
+git add .
+git commit -a -m 'Step 8: add base_html_layout.html and use it root and info templates'
 
 
 # #Step XXX:
