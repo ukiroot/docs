@@ -250,6 +250,10 @@ from django.db import models
 class UnixUser(models.Model):
     name = models.CharField(max_length=120)
     user_id = models.IntegerField()
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return "Name: {}, userId: {}, date_creation: {}".format(self.name, self.user_id, self.date)
 EOF
 python3 manage.py makemigrations
 python3 manage.py migrate
@@ -265,3 +269,43 @@ from .models import UnixUser
 admin.site.register(UnixUser)
 EOF
 git commit -a -m 'Step 13: register "unixusers" in django admin'
+
+
+#Step 14: add to DB new UnixUser from CMD
+python3 manage.py shell -c "from unixusers.models import UnixUser;UnixUser(name='lol', user_id=102).save()"
+git commit db.sqlite3 -m 'Step 14: add to DB new UnixUser from CMD'
+
+
+#Step 15: add new endpoint for sync 'api/unixusers/sync' and get 'api/unixusers/' users
+cat > unixusers/views.py << "EOF"
+from django.http import HttpResponse
+from .models import UnixUser
+
+def get(request):
+    return HttpResponse(list(UnixUser.objects.all()))
+
+def sync(request):
+    with open('/etc/passwd', 'r') as file:
+        for user_record in file:
+            user_recorld_list = user_record.split(':')
+            UnixUser(
+                name=user_recorld_list[0],
+                user_id=user_recorld_list[2]
+            ).save()
+    return HttpResponse(list(UnixUser.objects.all()))
+EOF
+cat > unixusers/urls.py << "EOF"
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path('', views.get),
+    path('sync', views.sync),
+]
+EOF
+sed -i \
+    -e 's/^from django.urls import path$/from django.urls import path, include/' \
+    -e "26 a\    path('api/unixusers/', include('unixusers.urls'))," \
+     django_project/urls.py
+git add .
+git commit -a "Step 15: add new endpoint for sync 'api/unixusers/sync' and get 'api/unixusers/' users"
