@@ -6,9 +6,8 @@ set -o errexit
 
 apt-get install -y debootstrap qemu-utils
 
-pushd /var/lib/libvirt/images/
-mkdir -p min_dist
-pushd min_dist
+mkdir -p /var/lib/libvirt/images/min_dist
+pushd /var/lib/libvirt/images/min_dist
 
 qemu-img create centos_7.img 2G
 
