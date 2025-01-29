@@ -71,7 +71,7 @@ OEFFFF
 
 cat > /etc/default/grub << "OEFFFF"
 GRUB_TERMINAL="serial console"
-GRUB_CMDLINE_LINUX="net.ifnames=0 console=tty0 console=ttyS0,115200"
+GRUB_CMDLINE_LINUX="net.ifnames=0 console=tty0 console=ttyS0,115200 selinux=0"
 OEFFFF
 grub2-install ${DISK_DEV} --modules="biosdisk part_msdos" --target=i386-pc
 grub2-mkconfig -o /boot/grub2/grub.cfg
