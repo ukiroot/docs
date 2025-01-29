@@ -248,8 +248,8 @@ cat > unixusers/models.py << "EOF"
 from django.db import models
 
 class UnixUser(models.Model):
-    name = models.CharField(max_length=120)
-    user_id = models.IntegerField()
+    name = models.CharField(max_length=120, unique=True)
+    user_id = models.IntegerField(unique=True)
     date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -272,27 +272,41 @@ git commit -a -m 'Step 13: register "unixusers" in django admin'
 
 
 #Step 14: add to DB new UnixUser from CMD
-python3 manage.py shell -c "from unixusers.models import UnixUser;UnixUser(name='lol', user_id=102).save()"
+python3 manage.py shell -c "from unixusers.models import UnixUser;UnixUser(name='lol', user_id=7777777).save()"
 git commit db.sqlite3 -m 'Step 14: add to DB new UnixUser from CMD'
 
 
 #Step 15: add new endpoint for sync 'api/unixusers/sync' and get 'api/unixusers/' users
 cat > unixusers/views.py << "EOF"
 from django.http import HttpResponse
+from django.core import serializers
 from .models import UnixUser
+import json
+
 
 def get(request):
-    return HttpResponse(list(UnixUser.objects.all()))
+    return HttpResponse(
+        serializers.serialize(
+            'json',
+            UnixUser.objects.all()
+        )
+    )
 
 def sync(request):
+    synced_users = set()
     with open('/etc/passwd', 'r') as file:
         for user_record in file:
             user_recorld_list = user_record.split(':')
-            UnixUser(
-                name=user_recorld_list[0],
-                user_id=user_recorld_list[2]
-            ).save()
-    return HttpResponse(list(UnixUser.objects.all()))
+            user_name=user_recorld_list[0]
+            user_id=user_recorld_list[2]
+            if not UnixUser.objects.filter(name=user_name).exists():
+                new_user = UnixUser(name=user_name, user_id=user_id)
+                new_user.save()
+                synced_users.add(new_user)
+    count = len(synced_users)
+    return HttpResponse(
+        json.dumps({"count":count})
+    )
 EOF
 cat > unixusers/urls.py << "EOF"
 from django.urls import path
