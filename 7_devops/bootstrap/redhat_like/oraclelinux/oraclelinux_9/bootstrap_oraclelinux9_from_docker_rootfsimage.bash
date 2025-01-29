@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # List of available images could be get by link:
 # https://hub.docker.com/v2/namespaces/library/repositories/oraclelinux/tags?page_size=100&name=9-slim
 
