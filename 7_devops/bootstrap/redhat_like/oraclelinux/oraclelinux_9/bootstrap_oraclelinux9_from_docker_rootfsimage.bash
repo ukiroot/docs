@@ -10,7 +10,7 @@ set -o errexit
 apt-get install -y debootstrap qemu-utils docker.io
 
 mkdir -p /var/lib/libvirt/images/min_dist
-cd /var/lib/libvirt/images/min_dist
+pushd /var/lib/libvirt/images/min_dist
 
 qemu-img create oraclelinux9.img 3G
 
@@ -31,7 +31,7 @@ mkfs.ext4 -F ${DISK_DEV}p1
 mkdir -p /mnt/oraclelinux9
 mount -v ${DISK_DEV}p1 /mnt/oraclelinux9
 
-cd /mnt/oraclelinux9
+pushd /mnt/oraclelinux9
 
 docker run --pull always --rm  docker.io/library/oraclelinux:9-slim ls
 docker save docker.io/library/oraclelinux:9-slim  > oraclelinux_9.tar
@@ -85,7 +85,9 @@ EOF
 chroot /mnt/oraclelinux9 /bin/bash /root/postinst.sh
 chroot /mnt/oraclelinux9 /bin/bash -c "rm -vf /root/postinst.sh"
 
-cd ~/
+popd
+popd
+
 umount -v /mnt/oraclelinux9/dev/pts
 umount -v /mnt/oraclelinux9/dev
 umount -v /mnt/oraclelinux9/proc
