@@ -1,6 +1,10 @@
 # List of available images could be get by link:
 # https://hub.docker.com/v2/namespaces/library/repositories/oraclelinux/tags?page_size=100&name=9-slim
 
+set -o xtrace
+set -o verbose
+set -o errexit
+
 apt-get install -y debootstrap qemu-utils docker.io
 
 mkdir -p /var/lib/libvirt/images/min_dist
@@ -31,9 +35,10 @@ docker run --pull always --rm  docker.io/library/oraclelinux:9-slim ls
 docker save docker.io/library/oraclelinux:9-slim  > oraclelinux_9.tar
 
 tar xvf *.tar
-find ./ -name layer.tar | while read LAYER; do mv -v ${LAYER} ./;done
-ls -1 | grep -v layer | while read FILE; do rm -f ${FILE}; done
-tar xvf *.tar
+cat manifest.json | jq --raw-output '.[0].Layers[]' | grep blobs | while read LAYER; do
+  tar xvf ${LAYER} -C ./
+done
+rm -rfv blobs/sha256/
 
 mount -v --bind /dev /mnt/oraclelinux9/dev
 mount -vt devpts devpts /mnt/oraclelinux9/dev/pts
