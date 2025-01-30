@@ -7,7 +7,7 @@ set -o xtrace
 set -o verbose
 set -o errexit
 
-flock --exclusive /tmp/lock__from_docs \
+flock --exclusive /tmp/apt_from_docs.lock \
     apt-get install -y debootstrap qemu-utils docker.io
 
 mkdir -p /var/lib/libvirt/images/min_dist
@@ -25,7 +25,7 @@ a
 w
 EOF
 
-DISK_DEV=`losetup -f --show "oraclelinux9.img"`
+DISK_DEV=`flock --exclusive /tmp/losetup_get_new_dev.lock losetup -f --show "oraclelinux9.img"`
 
 partprobe ${DISK_DEV}
 mkfs.ext4 -F ${DISK_DEV}p1

@@ -1,15 +1,20 @@
 #!/bin/bash
-#Total 541
+#Total size 335Mb
 #RS232 and VGA
-apt-get install -y debootstrap qemu-utils
 
+set -o xtrace
+set -o verbose
+set -o errexit
+
+flock --exclusive /tmp/apt_from_docs.lock \
+    apt-get install -y debootstrap qemu-utils
 
 mkdir -p /var/lib/libvirt/images/min_dist
-cd /var/lib/libvirt/images/min_dist
+pushd /var/lib/libvirt/images/min_dist
 
-qemu-img create Debian8.img 1900M
+qemu-img create Debian7.img 1G
 modprobe nbd max_part=15
-qemu-nbd -c /dev/nbd0 Debian8.img
+qemu-nbd -f raw  -c /dev/nbd0 Debian7.img || true
 
 
 fdisk /dev/nbd0 << "EOF"
@@ -19,32 +24,23 @@ p
 
 
 a
-1
 w
 EOF
-partprobe /dev/nbd0
 mkfs.ext4 /dev/nbd0p1
-mkdir /mnt/debian
+mkdir -p  /mnt/debian
 mount -v /dev/nbd0p1 /mnt/debian
 
-debootstrap --verbose --include=sudo,locales,nano,wget,grub-pc --arch amd64 jessie /mnt/debian http://ftp.pt.debian.org/debian/
+debootstrap --verbose --include=sudo,nano,wget,grub-pc --arch amd64 wheezy /mnt/debian http://archive.debian.org/debian/
 
 cat > /mnt/debian/etc/fstab << "EOF"
 /dev/sda1       /               ext4        defaults        0       1
 EOF
 
 cat > /mnt/debian/etc/apt/sources.list << "EOF"
-deb http://ftp.pt.debian.org/debian jessie main contrib non-free
-deb-src http://ftp.pt.debian.org/debian jessie main contrib non-free
-
-deb http://ftp.debian.org/debian/ jessie-updates main contrib non-free
-deb-src http://ftp.debian.org/debian/ jessie-updates main contrib non-free
-
-deb http://ftp.debian.org/debian/ jessie-backports main contrib non-free
-deb-src http://ftp.debian.org/debian/ jessie-backports main contrib non-free
-
-deb http://ftp.pt.debian.org/debian-security jessie/updates main contrib non-free
-deb-src http://ftp.pt.debian.org/debian-security jessie/updates main contrib non-free
+deb http://archive.debian.org/debian/ wheezy main contrib non-free
+deb http://archive.debian.org/debian/ wheezy-backports main contrib non-free
+# Debian Wheezy (Debian 7) reached its end of life (EOL) on May 31, 2018
+#deb http://archive.debian.org/debian/ wheezy/updates main contrib non-free
 EOF
 
 cat > /mnt/debian/root/postinst.sh << "EOF"
@@ -52,31 +48,17 @@ cat > /mnt/debian/root/postinst.sh << "EOF"
 
 apt-get update
 
-useradd -m -s /bin/bash tester
-passwd tester << "OEF"
-tester
-tester
-OEF
-
 passwd << "OEF"
 admin
 admin
 OEF
 
-cat > /etc/default/locale << OEF
-LANG=en_US.UTF-8
-OEF
-
-cat > /etc/locale.gen << OEF
-en_US.UTF-8 UTF-8
-OEF
-
-locale-gen
 
 apt-get -y install linux-image-amd64
 #apt-get -y install firmware-linux firmware-ralink firmware-realtek
 apt-get clean
 
+sed -i 's/^#T0:23.*/T0:23:respawn:\/sbin\/getty -L ttyS0 115200 vt100/' /etc/inittab
 sed -i 's/^#GRUB_TERMINAL.*/GRUB_TERMINAL="serial console"/' /etc/default/grub
 sed -i 's/^GRUB_CMDLINE_LINUX.*/GRUB_CMDLINE_LINUX="console=ttyS0"/' /etc/default/grub
 
@@ -97,16 +79,15 @@ mount -vt tmpfs tmpfs /mnt/debian/run
 chroot /mnt/debian /bin/bash /root/postinst.sh
 chroot /mnt/debian /bin/bash -c "rm -rf /root/postinst.sh"
 
+popd
 
 umount -v /mnt/debian/dev/pts
-umount -v /mnt/debian/dev
+umount -v  /mnt/debian/dev
 umount -v /mnt/debian/proc
 umount -v /mnt/debian/sys
 umount -v /mnt/debian/run
-
-
 umount -v /mnt/debian/
-sync
-sleep 1
+
+
 qemu-nbd -d /dev/nbd0
 rmmod nbd
