@@ -7,7 +7,8 @@ set -o xtrace
 set -o verbose
 set -o errexit
 
-apt-get install -y debootstrap qemu-utils docker.io
+flock --exclusive /tmp/lock__from_docs \
+    apt-get install -y debootstrap qemu-utils docker.io
 
 mkdir -p /var/lib/libvirt/images/min_dist
 pushd /var/lib/libvirt/images/min_dist

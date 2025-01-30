@@ -4,7 +4,8 @@ set -o xtrace
 set -o verbose
 set -o errexit
 
-apt-get install -y debootstrap qemu-utils
+flock --exclusive /tmp/lock__from_docs \
+    apt install -y debootstrap qemu-utils
 
 mkdir -p /var/lib/libvirt/images/min_dist
 pushd /var/lib/libvirt/images/min_dist
