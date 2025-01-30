@@ -78,7 +78,6 @@ EOF
 
 
 mount -v --bind /dev /mnt/debian_sid/dev
-mount -vt devpts devpts /mnt/debian_sid/dev/pts
 mount -vt proc proc /mnt/debian_sid/proc
 mount -vt sysfs sysfs /mnt/debian_sid/sys
 mount -vt tmpfs tmpfs /mnt/debian_sid/run
@@ -89,11 +88,10 @@ chroot /mnt/debian_sid /bin/bash -c "rm -rf /root/postinst.sh"
 
 popd
 
-umount -v /mnt/debian_sid/dev/pts
-umount -v /mnt/debian_sid/dev
-umount -v /mnt/debian_sid/proc
-umount -v /mnt/debian_sid/sys
 umount -v /mnt/debian_sid/run
+umount -v /mnt/debian_sid/sys
+umount -v /mnt/debian_sid/proc
+umount -v /mnt/debian_sid/dev
 umount -v /mnt/debian_sid/
 
 losetup -d ${DISK_DEV}

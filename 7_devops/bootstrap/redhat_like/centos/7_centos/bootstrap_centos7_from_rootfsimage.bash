@@ -26,21 +26,20 @@ DISK_DEV=`flock --exclusive /tmp/losetup_get_new_dev.lock losetup -f --show "cen
 
 partprobe ${DISK_DEV}
 mkfs.ext4 -F ${DISK_DEV}p1
-mkdir -p /mnt/centos
-mount -v ${DISK_DEV}p1 /mnt/centos
+mkdir -p /mnt/centos_7
+mount -v ${DISK_DEV}p1 /mnt/centos_7
 
-pushd /mnt/centos
+pushd /mnt/centos_7
 wget https://download.openvz.org/contrib/template/precreated/centos-7-x86_64-minimal-20170709.tar.xz
 tar xvf *.tar.xz
 
-mount -v --bind /dev /mnt/centos/dev
-mount -vt devpts devpts /mnt/centos/dev/pts
-mount -vt proc proc /mnt/centos/proc
-mount -vt tmpfs tmpfs /mnt/centos/run
-mount -vt sysfs sysfs /mnt/centos/sys
+mount -v --bind /dev /mnt/centos_7/dev
+mount -vt proc proc /mnt/centos_7/proc
+mount -vt tmpfs tmpfs /mnt/centos_7/run
+mount -vt sysfs sysfs /mnt/centos_7/sys
 
 
-cat > /mnt/centos/root/postinst.sh << "EOF"
+cat > /mnt/centos_7/root/postinst.sh << "EOF"
 
 set -o xtrace
 set -o verbose
@@ -79,7 +78,7 @@ gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
 EOFFF
 
 EOF
-cat >> /mnt/centos/root/postinst.sh << EOF
+cat >> /mnt/centos_7/root/postinst.sh << EOF
 echo 'nameserver 8.8.8.8' > /etc/resolv.conf
 yum -y update
 yum -y install kernel.x86_64
@@ -97,7 +96,7 @@ sed -i 's/\/dev\/loop.p1/\/dev\/sda1/g' /boot/grub2/grub.cfg
 sed -i 's/linuxefi/linux/g' /boot/grub2/grub.cfg
 sed -i 's/initrdefi/initrd/g' /boot/grub2/grub.cfg
 EOF
-cat >> /mnt/centos/root/postinst.sh << "EOF"
+cat >> /mnt/centos_7/root/postinst.sh << "EOF"
 
 passwd << "OEFFFF"
 admin
@@ -110,17 +109,16 @@ rm -fv /boot/initramfs*
 dracut --force --add-drivers ahci --add-drivers virtio_scsi --add-drivers sd_mod /boot/initramfs-${KERNEL_VERSION}.img ${KERNEL_VERSION}
 EOF
 
-chroot /mnt/centos /bin/bash /root/postinst.sh
-chroot /mnt/centos /bin/bash -c "rm -vf /root/postinst.sh"
+chroot /mnt/centos_7 /bin/bash /root/postinst.sh
+chroot /mnt/centos_7 /bin/bash -c "rm -vf /root/postinst.sh"
 
 popd
 popd
 
-umount -v /mnt/centos/dev/pts
-umount -v /mnt/centos/dev
-umount -v /mnt/centos/proc
-umount -v /mnt/centos/run
-umount -v /mnt/centos/sys
-umount -v /mnt/centos
+umount -v /mnt/centos_7/run
+umount -v /mnt/centos_7/sys
+umount -v /mnt/centos_7/proc
+umount -v /mnt/centos_7/dev
+umount -v /mnt/centos_7
 
 losetup -d "${DISK_DEV}"

@@ -3,7 +3,6 @@ import pytest
 import os
 
 @pytest.mark.bootstrap
-@pytest.mark.bootstrap_redhat_like
 def test_bootstrap():
     current_path = os.path.dirname(__file__)
     result = subprocess.run(

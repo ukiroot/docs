@@ -13,9 +13,9 @@ flock --exclusive /tmp/apt_from_docs.lock \
 mkdir -p /var/lib/libvirt/images/min_dist
 pushd /var/lib/libvirt/images/min_dist
 
-qemu-img create oraclelinux9.img 3G
+qemu-img create oraclelinux_9.img 3G
 
-fdisk oraclelinux9.img << "EOF"
+fdisk oraclelinux_9.img << "EOF"
 n
 p
 1
@@ -25,14 +25,14 @@ a
 w
 EOF
 
-DISK_DEV=`flock --exclusive /tmp/losetup_get_new_dev.lock losetup -f --show "oraclelinux9.img"`
+DISK_DEV=`flock --exclusive /tmp/losetup_get_new_dev.lock losetup -f --show "oraclelinux_9.img"`
 
 partprobe ${DISK_DEV}
 mkfs.ext4 -F ${DISK_DEV}p1
-mkdir -p /mnt/oraclelinux9
-mount -v ${DISK_DEV}p1 /mnt/oraclelinux9
+mkdir -p /mnt/oraclelinux_9
+mount -v ${DISK_DEV}p1 /mnt/oraclelinux_9
 
-pushd /mnt/oraclelinux9
+pushd /mnt/oraclelinux_9
 
 docker run --pull always --rm  docker.io/library/oraclelinux:9-slim ls
 docker save docker.io/library/oraclelinux:9-slim  > oraclelinux_9.tar
@@ -43,13 +43,12 @@ cat manifest.json | jq --raw-output '.[0].Layers[]' | grep blobs | while read LA
 done
 rm -rfv blobs/sha256/
 
-mount -v --bind /dev /mnt/oraclelinux9/dev
-mount -vt devpts devpts /mnt/oraclelinux9/dev/pts
-mount -vt proc proc /mnt/oraclelinux9/proc
-mount -vt tmpfs tmpfs /mnt/oraclelinux9/run
-mount -vt sysfs sysfs /mnt/oraclelinux9/sys
+mount -v --bind /dev /mnt/oraclelinux_9/dev
+mount -vt proc proc /mnt/oraclelinux_9/proc
+mount -vt tmpfs tmpfs /mnt/oraclelinux_9/run
+mount -vt sysfs sysfs /mnt/oraclelinux_9/sys
 
-cat > /mnt/oraclelinux9/root/postinst.sh << EOF
+cat > /mnt/oraclelinux_9/root/postinst.sh << EOF
 
 cat > /etc/fstab << "OEFFFF"
 /dev/sda1       /               ext4        defaults        0       1
@@ -78,22 +77,21 @@ grub2-install ${DISK_DEV} --modules="biosdisk part_msdos" --target=i386-pc
 grub2-mkconfig -o /boot/grub2/grub.cfg
 EOF
 
-cat >> /mnt/oraclelinux9/root/postinst.sh << "EOF"
+cat >> /mnt/oraclelinux_9/root/postinst.sh << "EOF"
 KERNEL_VERSION=`ls /boot/ | grep initramfs | tail -n1 | grep -Eo '[1-9].*' | sed 's/\.img//g'`
 dracut --force --add-drivers ahci --add-drivers virtio_scsi --add-drivers sd_mod /boot/initramfs-${KERNEL_VERSION}.img ${KERNEL_VERSION}
 EOF
 
-chroot /mnt/oraclelinux9 /bin/bash /root/postinst.sh
-chroot /mnt/oraclelinux9 /bin/bash -c "rm -vf /root/postinst.sh"
+chroot /mnt/oraclelinux_9 /bin/bash /root/postinst.sh
+chroot /mnt/oraclelinux_9 /bin/bash -c "rm -vf /root/postinst.sh"
 
 popd
 popd
 
-umount -v /mnt/oraclelinux9/dev/pts
-umount -v /mnt/oraclelinux9/dev
-umount -v /mnt/oraclelinux9/proc
-umount -v /mnt/oraclelinux9/run
-umount -v /mnt/oraclelinux9/sys
-umount -v /mnt/oraclelinux9
+umount -v /mnt/oraclelinux_9/sys
+umount -v /mnt/oraclelinux_9/run
+umount -v /mnt/oraclelinux_9/proc
+umount -v /mnt/oraclelinux_9/dev
+umount -v /mnt/oraclelinux_9
 
 losetup -d "${DISK_DEV}"
