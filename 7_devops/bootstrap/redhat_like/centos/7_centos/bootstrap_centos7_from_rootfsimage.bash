@@ -114,7 +114,6 @@ chroot /mnt/centos /bin/bash -c "rm -vf /root/postinst.sh"
 
 popd
 popd
-popd
 
 umount -v /mnt/centos/dev/pts
 umount -v /mnt/centos/dev
