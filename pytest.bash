@@ -10,4 +10,6 @@ python3 -m venv .docs_venv
 source .docs_venv/bin/activate
 pip3 install -r requirements.txt
 
-pytest -m ${1:-mvt}
+pytest \
+    -m ${1:-mvt} \
+    --html=reports/`date '+%Y_%m_%d_%H_%M_%S'`.html
