@@ -1,14 +1,10 @@
-import subprocess
-import pytest
+import sys
 import os
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../docs_stdlib')))
+from base import pytest
+import base
+
 @pytest.mark.bootstrap
-def test_bootstrap():
-    current_path = os.path.dirname(__file__)
-    result = subprocess.run(
-        'cd {}; sudo bash `ls -1 | grep bash`'.format(current_path),
-        shell=True,
-        capture_output=True,
-        text=True
-    )
-    assert result.returncode == 0
+def test_bash_script():
+    base.bash_script(os.path.dirname(__file__))
