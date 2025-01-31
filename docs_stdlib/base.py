@@ -4,13 +4,14 @@ import os
 
 
 def bash_script(dir_path):
+    cmd = 'cd {};sudo bash -c "/usr/bin/time -v bash {} &>/dev/stdout"'
     for file_name in os.listdir(dir_path):
-       if ".bash" in file_name:
-           print(file_name)
-           break
+        if ".bash" in file_name:
+            print(file_name)
+            break
     print(file_name)
     result = subprocess.run(
-        'cd {};sudo bash -c "/usr/bin/time -v bash {} &>/dev/stdout"'.format(dir_path, file_name),
+        cmd.format(dir_path, file_name),
         shell=True,
         capture_output=True,
         text=True,
