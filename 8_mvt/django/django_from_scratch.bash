@@ -1,13 +1,17 @@
 #!/bin/bash
 
-#Step preparation
+set -o xtrace
+set -o verbose
+set -o errexit
+
+function 0_step_preparation(){
 export PYTHONDONTWRITEBYTECODE=1
 rm -rfv ~/Documents/django_from_scratch
 mkdir -p ~/Documents/django_from_scratch
 pushd ~/Documents/django_from_scratch
+}
 
-
-#Step 0: init empty git project
+function 0_step_init_empty_git_project(){
 git init 
 git config user.name "Alexey Veselov"
 git config user.email "ukiroot@gmail.com"
@@ -15,29 +19,29 @@ cat > .gitignore << EOF
 .gitignore
 .django_venv
 EOF
+}
 
-
-#Step 1: init virtual ENV
+function 1_step_init_virtual_ENV(){
 python3 -m venv .django_venv
 source .django_venv/bin/activate
+}
 
-
-#Step 2: add minimal necessary requirements for Django and install them
+function 2_step_add_minimal_necessary_requirements_for_Django_and_install_them(){
 cat > requirements.txt << EOF
 django==5.1.5
 EOF
 python3 -m pip install -r requirements.txt
 git add requirements.txt
-git commit -a -m "Step 2: add minimal necessary requirements for Django and install them"
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 3: init new  django project with name 'django_project' 
+function 3_step_init_new_django_project_with_name_django_project(){
 django-admin startproject django_project .
 git add django_project/ manage.py
-git commit -a -m "Step 3: init new  django project with name 'django_project'"
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 4: create simple views based on HttpResponse
+function 4_step_create_simple_views_based_on_HttpResponse(){
 cat > django_project/views.py << "EOF"
 from django.http import HttpResponse
 
@@ -58,10 +62,10 @@ sed -i \
     -e "21 a\    path('api/hello_world', views.api_hello_world),\n    path('api/request_info', views.api_request_info)," \
     django_project/urls.py
 git add django_project/views.py
-git commit -a -m "Step 4: create simple views based on HttpResponse"
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 5: add to 'views.py' new views based on render 'templating' 
+function 5_step_add_to_views.py_new_views_based_on_render_templating(){
 mkdir templates
 cat > templates/root.html << "EOF"
 <!DOCTYPE html>
@@ -117,10 +121,10 @@ sed -i \
     -e "23 a\    path('', views.root),\n    path('info', views.info)," \
     django_project/urls.py
 git add templates/
-git commit -a -m 'Step 5: add to 'views.py' new views based on render 'templating' '
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 6: add static, css styles
+6_step_add_static_css_styles(){
 sed -i \
     -e "12 a\import os" \
     -e "118 a\STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]" \
@@ -145,10 +149,10 @@ sed -i \
     -e '6 a\    <link rel="stylesheet" href="{% static '"'"css/style.css"'"' %}">' \
     templates/info.html
 git add static
-git commit -a -m 'Step 6: add static, css styles'
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 7: add static, javaScript code
+function 7_step_add_static_javaScript_code(){
 mkdir -p static/js/
 cat > static/js/main.js << "EOF"
 console.log('Just debug console message from ' + window.location.href)
@@ -159,10 +163,10 @@ sed -i \
 sed -i \
     -e '8 a\    <script src="{% static '"'"js/main.js"'"' %}" defer></script>' \
     templates/info.html
-git commit -a -m 'Step 7: add static, javaScript code'
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 8: add base_html_layout.html and use it root and info templates
+function 8_step_add_base_html_layout.html_and_use_it_root_and_info_templates(){
 cat > templates/base_html_layout.html << "EOF"
 <!DOCTYPE html>
 {% load static %}
@@ -220,30 +224,30 @@ cat > templates/root.html << "EOF"
 {% endblock %}
 EOF
 git add .
-git commit -a -m 'Step 8: add base_html_layout.html and use it root and info templates'
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 9: apply migrations
+function 9_step_apply_migrations(){
 python3 manage.py migrate
 git add db.sqlite3
-git commit -a -m "Step 9: apply migrations"
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 10: create django superuser
+function 10_step_create_django_superuser(){
 DJANGO_SUPERUSER_USERNAME=django DJANGO_SUPERUSER_EMAIL=django@example.com DJANGO_SUPERUSER_PASSWORD=django python3 manage.py createsuperuser --noinput
-git commit db.sqlite3 -m "Step 10: create django superuser"
+git commit db.sqlite3 -m "${FUNCNAME[*]}"
+}
 
-
-#Step 11: create new django app 'unixusers'
+function 11_step_create_new_django_app_unixusers(){
 python3 manage.py startapp unixusers
 sed -i \
-    -e "40 a\     'unixusers'," \
+    -e "39 a\     'unixusers'," \
     django_project/settings.py
 git add unixusers/
-git commit -a -m "Step 11: Create new django app 'unixusers'"
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 12: create model for app "unixusers"
+function 12_step_create_model_for_app_unixusers(){
 cat > unixusers/models.py << "EOF"
 from django.db import models
 
@@ -258,25 +262,25 @@ EOF
 python3 manage.py makemigrations
 python3 manage.py migrate
 git add .
-git commit -a -m 'Step 12: Create model for app "unixusers"'
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 13: register "unixusers" in django admin
+function 13_step_register_unixusers_in_django_admin(){
 cat > unixusers/admin.py << "EOF"
 from django.contrib import admin
 from .models import UnixUser
 
 admin.site.register(UnixUser)
 EOF
-git commit -a -m 'Step 13: register "unixusers" in django admin'
+git commit -a -m "${FUNCNAME[*]}"
+}
 
-
-#Step 14: add to DB new UnixUser from CMD
+function 14_step_add_to_DB_new_UnixUser_from_CMD(){
 python3 manage.py shell -c "from unixusers.models import UnixUser;UnixUser(name='lol', user_id=7777777).save()"
-git commit db.sqlite3 -m 'Step 14: add to DB new UnixUser from CMD'
+git commit db.sqlite3 -m "${FUNCNAME[*]}"
+}
 
-
-#Step 15: add new endpoint for sync 'api/unixusers/sync' and get 'api/unixusers/' users
+function 15_step_add_new_endpoint_for_sync_api-unixusers-sync_and_get_api-unixusers_users(){
 cat > unixusers/views.py << "EOF"
 from django.http import HttpResponse
 from django.core import serializers
@@ -322,4 +326,23 @@ sed -i \
     -e "26 a\    path('api/unixusers/', include('unixusers.urls'))," \
      django_project/urls.py
 git add .
-git commit -a "Step 15: add new endpoint for sync 'api/unixusers/sync' and get 'api/unixusers/' users"
+git commit -a -m "${FUNCNAME[*]}"
+}
+
+
+0_step_preparation
+0_step_init_empty_git_project
+1_step_init_virtual_ENV
+2_step_add_minimal_necessary_requirements_for_Django_and_install_them
+3_step_init_new_django_project_with_name_django_project
+4_step_create_simple_views_based_on_HttpResponse
+5_step_add_to_views.py_new_views_based_on_render_templating
+7_step_add_static_javaScript_code
+8_step_add_base_html_layout.html_and_use_it_root_and_info_templates
+9_step_apply_migrations
+10_step_create_django_superuser
+11_step_create_new_django_app_unixusers
+12_step_create_model_for_app_unixusers
+13_step_register_unixusers_in_django_admin
+14_step_add_to_DB_new_UnixUser_from_CMD
+15_step_add_new_endpoint_for_sync_api-unixusers-sync_and_get_api-unixusers_users
