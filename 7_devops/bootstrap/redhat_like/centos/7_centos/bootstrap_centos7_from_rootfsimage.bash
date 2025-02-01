@@ -83,6 +83,7 @@ echo 'nameserver 8.8.8.8' > /etc/resolv.conf
 yum -y update
 yum -y install kernel.x86_64
 yum -y install grub2.x86_64
+yum -y install dhclient
 ####Do not mount install grub2-efi-modules for install grub in Non-UEFI mode
 #yum -y install grub2-efi-modules
 # --target=i386-pc for legacy in Non-UEFI mode

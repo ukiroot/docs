@@ -56,13 +56,12 @@ OEFFFF
 
 sed -i '6s/enabled=0/enabled=1/g' /etc/yum.repos.d/uek-ol9.repo
 echo 'nameserver 8.8.8.8' > /etc/resolv.conf
-microdnf install dnf
-dnf install \
+microdnf install \
     kernel-uek \
     grub2-pc.x86_64 \
     passwd \
     iproute \
-    dhcp-client
+    NetworkManager
 
 passwd << "OEFFFF"
 admin
