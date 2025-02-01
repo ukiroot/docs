@@ -53,6 +53,16 @@ set -o xtrace
 set -o verbose
 set -o errexit
 
+cat > /etc/default/locale << OEF
+LANG=en_US.UTF-8
+OEF
+
+cat > /etc/locale.gen << OEF
+en_US.UTF-8 UTF-8
+OEF
+
+locale-gen
+
 apt update
 
 passwd << "OEF"
