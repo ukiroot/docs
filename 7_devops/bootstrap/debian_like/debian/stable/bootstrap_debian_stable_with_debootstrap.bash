@@ -71,8 +71,6 @@ EOF
 cat >> /mnt/debian_stable/root/postinst.sh << EOF
 update-grub2
 grub-install ${DISK_DEV} --modules="biosdisk part_msdos"
-#sed -i 's/\/dev\/loop0p1/\/dev\/sda1/g' /boot/grub/grub.cfg
-sync
 EOF
 
 mount -v --bind /dev /mnt/debian_stable/dev
