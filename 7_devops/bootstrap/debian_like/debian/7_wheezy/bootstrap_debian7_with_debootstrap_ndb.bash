@@ -53,12 +53,14 @@ set -o xtrace
 set -o verbose
 set -o errexit
 
+cat > /etc/hostname << "OEF"
+debian-7
+OEF
 
 passwd << "OEF"
 admin
 admin
 OEF
-
 
 #apt-get -y install firmware-linux firmware-ralink firmware-realtek
 #apt-get clean
@@ -67,13 +69,11 @@ sed -i 's/^#T0:23.*/T0:23:respawn:\/sbin\/getty -L ttyS0 115200 vt100/' /etc/ini
 sed -i 's/^#GRUB_TERMINAL.*/GRUB_TERMINAL="serial console"/' /etc/default/grub
 sed -i 's/^GRUB_CMDLINE_LINUX.*/GRUB_CMDLINE_LINUX="console=ttyS0"/' /etc/default/grub
 
-
 grub-install /dev/nbd0 --modules="biosdisk part_msdos" --force || true
 grub-mkconfig -o /boot/grub/grub.cfg
 sed -i 's/\/dev\/nbd0p1/\/re/g' /boot/grub/grub.cfg
 sync
 EOF
-
 
 mount -v --bind /dev /mnt/debian_7/dev
 mount -vt proc proc /mnt/debian_7/proc
@@ -90,7 +90,6 @@ umount -v /mnt/debian_7/sys
 umount -v /mnt/debian_7/proc
 umount -v /mnt/debian_7/dev
 umount -v /mnt/debian_7/
-
 
 qemu-nbd -d /dev/nbd0
 rmmod nbd

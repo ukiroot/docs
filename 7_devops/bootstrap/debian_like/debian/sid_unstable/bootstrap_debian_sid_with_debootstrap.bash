@@ -46,6 +46,10 @@ set -o xtrace
 set -o verbose
 set -o errexit
 
+cat > /etc/hostname << "OEF"
+debian-sid
+OEF
+
 cat > /etc/default/locale << OEF
 LANG=en_US.UTF-8
 OEF
